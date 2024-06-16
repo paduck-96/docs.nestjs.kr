@@ -13,21 +13,15 @@
 **Forward reference**는 `forwardRef()` 유틸리티 함수를 사용하여 Nest가 아직 정의되지 않은 클래스를 참조할 수 있도록 합니다. 예를 들어, `CatsService`와 `CommonService`가 서로에게 의존하는 경우, 관계의 양쪽에서 `@Inject()`와 `forwardRef()` 유틸리티를 사용하여 순환 종속성을 해결할 수 있습니다. 그렇지 않으면 모든 필수 메타데이터가 사용할 수 없기 때문에 Nest는 이를 인스턴스화하지 않습니다. 다음은 예시입니다:
 
 ```typescript
-@@filename(cats.service)
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { CommonService } from './common.service';
+
 @Injectable()
 export class CatsService {
   constructor(
     @Inject(forwardRef(() => CommonService))
     private commonService: CommonService,
   ) {}
-}
-@@switch
-@Injectable()
-@Dependencies(forwardRef(() => CommonService))
-export class CatsService {
-  constructor(commonService) {
-    this.commonService = commonService;
-  }
 }
 ```
 
@@ -36,21 +30,15 @@ export class CatsService {
 이제 `CommonService`에서도 동일한 작업을 수행합니다:
 
 ```typescript
-@@filename(common.service)
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { CatsService } from './cats.service';
+
 @Injectable()
 export class CommonService {
   constructor(
     @Inject(forwardRef(() => CatsService))
     private catsService: CatsService,
   ) {}
-}
-@@switch
-@Injectable()
-@Dependencies(forwardRef(() => CatsService))
-export class CommonService {
-  constructor(catsService) {
-    this.catsService = catsService;
-  }
 }
 ```
 
@@ -65,7 +53,9 @@ export class CommonService {
 모듈 간의 순환 종속성을 해결하려면 모듈 연결의 양쪽에서 동일한 `forwardRef()` 유틸리티 함수를 사용하십시오. 예를 들어:
 
 ```typescript
-@@filename(common.module)
+import { Module, forwardRef } from '@nestjs/common';
+import { CatsModule } from './cats.module';
+
 @Module({
   imports: [forwardRef(() => CatsModule)],
 })
@@ -75,7 +65,9 @@ export class CommonModule {}
 이제 `CatsModule`에서도 동일한 작업을 수행합니다:
 
 ```typescript
-@@filename(cats.module)
+import { Module, forwardRef } from '@nestjs/common';
+import { CommonModule } from './common.module';
+
 @Module({
   imports: [forwardRef(() => CommonModule)],
 })
